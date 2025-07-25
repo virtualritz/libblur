@@ -27,6 +27,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #![allow(clippy::too_many_arguments, clippy::int_plus_one, stable_features)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(feature = "nightly_f16", feature(f16))]
 #![cfg_attr(
     all(feature = "nightly_fcma", target_arch = "aarch64"),
     feature(stdarch_neon_fcma)
