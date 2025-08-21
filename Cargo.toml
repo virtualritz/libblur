@@ -50,7 +50,7 @@ fast_transpose = { version = "0.2", optional = true }
 image = { version = "0.25", optional = true, default-features = false }
 novtb = "^0.1.6"
 num-complex = { version = "0.4", default-features = false }
-num-traits = { git = "https://github.com/virtualritz/num-traits.git" }
+num-traits = "0.2"
 rayon = "1"
 rustfft = { version = "6", optional = true }
 
