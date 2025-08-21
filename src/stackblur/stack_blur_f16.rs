@@ -34,7 +34,6 @@ use crate::stackblur::sse::{HorizontalSseStackBlurPassFloat16, VerticalSseStackB
 use crate::stackblur::{HorizontalStackBlurPass, StackBlurWorkingPass, VerticalStackBlurPass};
 use crate::unsafe_slice::UnsafeSlice;
 use crate::{AnisotropicRadius, BlurError, BlurImageMut, FastBlurChannels, ThreadingPolicy};
-use half::f16;
 
 fn stack_blur_worker_horizontal(
     slice: &UnsafeSlice<f16>,

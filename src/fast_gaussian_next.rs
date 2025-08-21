@@ -25,14 +25,23 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#[cfg(all(target_arch = "aarch64", feature = "neon", feature = "nightly_f16"))]
+use crate::neon::{fgn_horizontal_pass_neon_f16, fgn_vertical_pass_neon_f16};
 #[cfg(all(target_arch = "aarch64", feature = "neon"))]
 use crate::neon::{
-    fgn_horizontal_pass_neon_f16, fgn_horizontal_pass_neon_f32, fgn_horizontal_pass_neon_u8,
-    fgn_vertical_pass_neon_f16, fgn_vertical_pass_neon_f32, fgn_vertical_pass_neon_u8,
+    fgn_horizontal_pass_neon_f32, fgn_horizontal_pass_neon_u8, fgn_vertical_pass_neon_f32,
+    fgn_vertical_pass_neon_u8,
+};
+#[cfg(all(
+    any(target_arch = "x86_64", target_arch = "x86"),
+    feature = "sse",
+    feature = "nightly_f16"
+))]
+use crate::sse::{
+    fast_gaussian_next_horizontal_pass_sse_f16, fast_gaussian_next_vertical_pass_sse_f16,
 };
 #[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "sse"))]
 use crate::sse::{
-    fast_gaussian_next_horizontal_pass_sse_f16, fast_gaussian_next_vertical_pass_sse_f16,
     fgn_horizontal_pass_sse_f32, fgn_horizontal_pass_sse_u8, fgn_vertical_pass_sse_f32,
     fgn_vertical_pass_sse_u8,
 };
@@ -44,7 +53,6 @@ use crate::wasm32::{
 };
 use crate::{clamp_edge, BlurImageMut, EdgeMode, FastBlurChannels, ThreadingPolicy};
 use crate::{AnisotropicRadius, BlurError};
-use half::f16;
 use num_traits::{AsPrimitive, Float, FromPrimitive};
 
 const BASE_RADIUS_I64_CUTOFF: u32 = 150;
@@ -743,6 +751,7 @@ impl FastGaussianNextPassProvider<f32> for f32 {
     }
 }
 
+#[cfg(feature = "nightly_f16")]
 impl FastGaussianNextPassProvider<f16> for f16 {
     fn get_horizontal<const CN: usize>(
         radius: u32,
@@ -761,7 +770,11 @@ impl FastGaussianNextPassProvider<f16> for f16 {
         } else {
             fgn_horizontal_pass::<f16, f64, f64, CN>
         };
-        #[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "sse"))]
+        #[cfg(all(
+            any(target_arch = "x86_64", target_arch = "x86"),
+            feature = "sse",
+            feature = "nightly_f16"
+        ))]
         {
             let is_sse_available = std::arch::is_x86_feature_detected!("sse4.1");
             let is_f16c_available = std::arch::is_x86_feature_detected!("f16c");
@@ -769,7 +782,7 @@ impl FastGaussianNextPassProvider<f16> for f16 {
                 _dispatcher_horizontal = fast_gaussian_next_horizontal_pass_sse_f16::<f16, CN>;
             }
         }
-        #[cfg(all(target_arch = "aarch64", feature = "neon"))]
+        #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "nightly_f16"))]
         {
             _dispatcher_horizontal = fgn_horizontal_pass_neon_f16::<f16, CN>;
         }
@@ -793,7 +806,11 @@ impl FastGaussianNextPassProvider<f16> for f16 {
         } else {
             fgn_vertical_pass::<f16, f64, f64, CN>
         };
-        #[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "sse"))]
+        #[cfg(all(
+            any(target_arch = "x86_64", target_arch = "x86"),
+            feature = "sse",
+            feature = "nightly_f16"
+        ))]
         {
             let _is_sse_available = std::arch::is_x86_feature_detected!("sse4.1");
             let _is_f16c_available = std::arch::is_x86_feature_detected!("f16c");
@@ -801,7 +818,7 @@ impl FastGaussianNextPassProvider<f16> for f16 {
                 _dispatcher_vertical = fast_gaussian_next_vertical_pass_sse_f16::<f16, CN>;
             }
         }
-        #[cfg(all(target_arch = "aarch64", feature = "neon"))]
+        #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "nightly_f16"))]
         {
             _dispatcher_vertical = fgn_vertical_pass_neon_f16::<f16, CN>;
         }
@@ -1034,6 +1051,7 @@ pub fn fast_gaussian_next_f32(
 ///
 /// # Panics
 /// Panic is stride/width/height/channel configuration do not match provided
+#[cfg(feature = "nightly_f16")]
 pub fn fast_gaussian_next_f16(
     in_place: &mut BlurImageMut<f16>,
     radius: AnisotropicRadius,
@@ -1046,11 +1064,13 @@ pub fn fast_gaussian_next_f16(
     let width = in_place.width;
     let height = in_place.height;
     let radius = AnisotropicRadius::create(radius.x_axis.max(1), radius.y_axis.max(1));
+    let data = in_place.data.borrow_mut();
+    #[cfg(feature = "nightly_f16")]
     impl_margin_call!(
-        half::f16,
+        f16,
         channels,
         edge_mode,
-        unsafe { std::mem::transmute::<&mut [f16], &mut [f16]>(in_place.data.borrow_mut()) },
+        data,
         stride,
         width,
         height,

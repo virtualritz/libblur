@@ -29,7 +29,6 @@
 use crate::neon::{load_f32_f16, p_vfmaq_f32, store_f32_f16};
 use crate::stackblur::stack_blur_pass::StackBlurWorkingPass;
 use crate::unsafe_slice::UnsafeSlice;
-use half::f16;
 use num_traits::{AsPrimitive, FromPrimitive};
 use std::arch::aarch64::*;
 use std::marker::PhantomData;

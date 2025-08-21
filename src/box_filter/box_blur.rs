@@ -30,7 +30,6 @@ use crate::to_storage::ToStorage;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::util::check_slice_size;
 use crate::{BlurError, BlurImage, BlurImageMut, ThreadingPolicy};
-use half::f16;
 use novtb::{ParallelZonedIterator, TbSliceMut};
 use num_traits::cast::FromPrimitive;
 use num_traits::AsPrimitive;
@@ -360,6 +359,7 @@ impl BoxBlurHorizontalPass<f32> for f32 {
     }
 }
 
+#[cfg(feature = "nightly_f16")]
 impl BoxBlurHorizontalPass<f16> for f16 {
     #[allow(clippy::type_complexity)]
     fn get_horizontal_pass<const CN: usize>(
@@ -595,6 +595,7 @@ trait BoxBlurVerticalPass<T> {
     );
 }
 
+#[cfg(feature = "nightly_f16")]
 impl BoxBlurVerticalPass<f16> for f16 {
     #[allow(clippy::type_complexity)]
     fn get_box_vertical_pass<const CHANNELS_CONFIGURATION: usize>(
@@ -847,6 +848,7 @@ impl RingBufferHandler<f32> for f32 {
     const BOX_RING_IN_SINGLE_THREAD: bool = true;
 }
 
+#[cfg(feature = "nightly_f16")]
 impl RingBufferHandler<f16> for f16 {
     fn box_filter_ring_buffer<const CN: usize>(
         src: &[f16],
@@ -950,6 +952,7 @@ impl VRowSum<f32, f32> for () {
     }
 }
 
+#[cfg(feature = "nightly_f16")]
 impl VRowSum<f16, f32> for () {
     fn ring_vertical_row_summ() -> fn(&[&[f16]; 2], &mut [f16], &mut [f32], u32) {
         ring_vertical_row_summ

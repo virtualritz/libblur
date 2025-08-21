@@ -25,20 +25,27 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use half::f16;
 use num_traits::cast::FromPrimitive;
 use num_traits::{AsPrimitive, Float};
 
 use crate::channels_configuration::FastBlurChannels;
+#[cfg(all(target_arch = "aarch64", feature = "neon", feature = "nightly_f16"))]
+use crate::neon::{fg_horizontal_pass_neon_f16, fg_vertical_pass_neon_f16};
 #[cfg(all(target_arch = "aarch64", feature = "neon"))]
 use crate::neon::{
-    fg_horizontal_pass_neon_f16, fg_horizontal_pass_neon_f32, fg_horizontal_pass_neon_u8,
-    fg_vertical_pass_neon_f16, fg_vertical_pass_neon_f32, fg_vertical_pass_neon_u8,
+    fg_horizontal_pass_neon_f32, fg_horizontal_pass_neon_u8, fg_vertical_pass_neon_f32,
+    fg_vertical_pass_neon_u8,
 };
+#[cfg(all(
+    any(target_arch = "x86_64", target_arch = "x86"),
+    feature = "sse",
+    feature = "nightly_f16"
+))]
+use crate::sse::{fg_horizontal_pass_sse_f16, fg_vertical_pass_sse_f16};
 #[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "sse"))]
 use crate::sse::{
-    fg_horizontal_pass_sse_f16, fg_horizontal_pass_sse_f32, fg_horizontal_pass_sse_u8,
-    fg_vertical_pass_sse_f16, fg_vertical_pass_sse_f32, fg_vertical_pass_sse_u8,
+    fg_horizontal_pass_sse_f32, fg_horizontal_pass_sse_u8, fg_vertical_pass_sse_f32,
+    fg_vertical_pass_sse_u8,
 };
 use crate::threading_policy::ThreadingPolicy;
 use crate::to_storage::ToStorage;
@@ -152,7 +159,8 @@ impl InitialValue for u16 {
     }
 }
 
-impl InitialValue for half::f16 {
+#[cfg(feature = "nightly_f16")]
+impl InitialValue for f16 {
     fn get_initial(_: usize) -> i64 {
         0i64
     }
@@ -674,6 +682,7 @@ impl FastGaussianDispatchProvider<f32> for f32 {
     }
 }
 
+#[cfg(feature = "nightly_f16")]
 impl FastGaussianDispatchProvider<f16> for f16 {
     fn get_vertical<const CN: usize>(
         radius: u32,
@@ -692,11 +701,15 @@ impl FastGaussianDispatchProvider<f16> for f16 {
         } else {
             fg_vertical_pass::<f16, f64, f64, CN>
         };
-        #[cfg(all(target_arch = "aarch64", feature = "neon"))]
+        #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "nightly_f16"))]
         {
             _dispatcher_vertical = fg_vertical_pass_neon_f16::<f16, CN>;
         }
-        #[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "sse"))]
+        #[cfg(all(
+            any(target_arch = "x86_64", target_arch = "x86"),
+            feature = "sse",
+            feature = "nightly_f16"
+        ))]
         {
             if std::arch::is_x86_feature_detected!("sse4.1")
                 && std::arch::is_x86_feature_detected!("f16c")
@@ -724,11 +737,15 @@ impl FastGaussianDispatchProvider<f16> for f16 {
         } else {
             fg_horizontal_pass::<f16, f64, f64, CN>
         };
-        #[cfg(all(target_arch = "aarch64", feature = "neon"))]
+        #[cfg(all(target_arch = "aarch64", feature = "neon", feature = "nightly_f16"))]
         {
             _dispatcher_horizontal = fg_horizontal_pass_neon_f16::<f16, CN>;
         }
-        #[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "sse"))]
+        #[cfg(all(
+            any(target_arch = "x86_64", target_arch = "x86"),
+            feature = "sse",
+            feature = "nightly_f16"
+        ))]
         {
             if std::arch::is_x86_feature_detected!("sse4.1")
                 && std::arch::is_x86_feature_detected!("f16c")
@@ -968,6 +985,7 @@ pub fn fast_gaussian_f32(
 ///
 /// # Panics
 /// Panic is stride/width/height/channel configuration do not match provided
+#[cfg(feature = "nightly_f16")]
 pub fn fast_gaussian_f16(
     image: &mut BlurImageMut<f16>,
     radius: AnisotropicRadius,
@@ -981,8 +999,9 @@ pub fn fast_gaussian_f16(
     let channels = image.channels;
     let data = image.data.borrow_mut();
     let radius = AnisotropicRadius::create(radius.x_axis.max(1), radius.y_axis.max(1));
+    #[cfg(feature = "nightly_f16")]
     impl_margin_call!(
-        half::f16,
+        f16,
         channels,
         edge_mode,
         data,

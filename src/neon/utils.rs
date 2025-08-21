@@ -28,7 +28,6 @@
 use crate::neon::f16_utils::{
     xreinterpret_f16_u16, xreinterpret_u16_f16, xvcvt_f16_f32, xvcvt_f32_f16, xvld_f16, xvst_f16,
 };
-use half::f16;
 use std::arch::aarch64::*;
 
 #[inline(always)]
@@ -349,6 +348,7 @@ pub(crate) unsafe fn prefer_vfma_f32(
     }
 }
 
+#[cfg(feature = "nightly_f16")]
 #[inline(always)]
 pub unsafe fn load_f32_f16<const CN: usize>(ptr: *const f16) -> float32x4_t {
     if CN == 4 {
@@ -369,6 +369,7 @@ pub unsafe fn load_f32_f16<const CN: usize>(ptr: *const f16) -> float32x4_t {
     xvcvt_f32_f16(cvt)
 }
 
+#[cfg(feature = "nightly_f16")]
 #[inline(always)]
 pub unsafe fn store_f32_f16<const CN: usize>(dst_ptr: *mut f16, in_regi: float32x4_t) {
     let out_regi = xvcvt_f16_f32(in_regi);

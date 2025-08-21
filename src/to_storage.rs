@@ -25,8 +25,6 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use half::f16;
-
 /// Helper trait to convert and round if we are storing in integral type
 pub trait ToStorage<T>: 'static + Copy
 where
@@ -115,14 +113,23 @@ impl_to_saturated_signed_storage!(i64, i16);
 impl_to_saturated_signed_storage!(i16, i8);
 impl_to_saturated_signed_storage!(u16, i8);
 
+#[cfg(feature = "nightly_f16")]
 impl ToStorage<f16> for f32 {
     fn to_(self) -> f16 {
-        f16::from_f32(self)
+        self as f16
     }
 }
 
+#[cfg(feature = "nightly_f16")]
 impl ToStorage<f16> for f64 {
     fn to_(self) -> f16 {
-        f16::from_f64(self)
+        self as f16
+    }
+}
+
+#[cfg(feature = "nightly_f16")]
+impl ToStorage<f16> for f16 {
+    fn to_(self) -> f16 {
+        self
     }
 }

@@ -16,19 +16,15 @@ repository = "https://github.com/awxkee/libblur.git"
 exclude = ["*.jpg", "./assets/*", "*.png"]
 rust-version = "1.82.0"
 
+[package.metadata.docs.rs]
+# To build locally:
+# RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features --no-deps --open --manifest-path ./Cargo.toml
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [lib]
 name = "libblur"
 path = "src/lib.rs"
-
-[dependencies]
-half = { version = "2.6", features = ["num-traits"] }
-num-traits = "0.2"
-rayon = "1"
-image = { version = "0.25", optional = true, default-features = false }
-rustfft = { version = "6.3", optional = true }
-fast_transpose = { version = "0.2", optional = true }
-num-complex = "0.4"
-novtb = "^0.1.6"
 
 [features]
 default = ["avx", "sse", "rdm", "neon"]
@@ -49,11 +45,17 @@ sse = []
 # Enables NEON intrinsics
 neon = []
 
-[package.metadata.docs.rs]
-# To build locally:
-# RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features --no-deps --open --manifest-path ./Cargo.toml
-all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
+[dependencies]
+fast_transpose = { version = "0.2", optional = true }
+image = { version = "0.25", optional = true, default-features = false }
+novtb = "^0.1.6"
+num-complex = { version = "0.4", default-features = false }
+num-traits = { git = "https://github.com/virtualritz/num-traits.git" }
+rayon = "1"
+rustfft = { version = "6", optional = true }
+
+[patch.crates-io]
+num-traits = { git = "https://github.com/virtualritz/num-traits.git" }
 
 [profile.profiling]
 inherits = "release"

@@ -34,7 +34,6 @@ use crate::{
     filter_1d_approx, filter_1d_exact, gaussian_kernel_1d_f64, sigma_size, sigma_size_d, BlurError,
     BlurImage, BlurImageMut, ConvolutionMode, Scalar, ThreadingPolicy,
 };
-use half::f16;
 
 #[derive(Copy, Clone, Debug)]
 pub struct GaussianBlurParams {
@@ -438,6 +437,7 @@ pub fn gaussian_blur_f32(
 /// # Panics
 /// Panic is stride/width/height/channel configuration do not match provided
 /// Panics if sigma = 0.8 and kernel size = 0.
+#[cfg(feature = "nightly_f16")]
 pub fn gaussian_blur_f16(
     src: &BlurImage<f16>,
     dst: &mut BlurImageMut<f16>,
